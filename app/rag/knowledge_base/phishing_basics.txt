@@ -16,3 +16,36 @@ Types of phishing:
 
 Phishing attacks often use fake HTTPS certificates to appear secure.
 Users should verify domain authenticity before entering credentials.
+Definition
+
+Phishing is a social engineering attack where attackers impersonate legitimate entities to steal credentials, financial data, or install malware.
+
+Types of Phishing
+
+Email Phishing
+
+Spear Phishing
+
+Whaling
+
+Smishing (SMS phishing)
+
+Vishing (Voice phishing)
+
+Clone Phishing
+
+Business Email Compromise (BEC)
+
+Common Indicators
+
+Suspicious sender domain
+
+Urgent language (“Act now!”)
+
+Mismatched URLs
+
+Attachments (.exe, .zip, macro-enabled docs)
+
+Spelling errors
+
+Unusual payment requests

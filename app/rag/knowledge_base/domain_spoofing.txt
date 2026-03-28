@@ -17,3 +17,45 @@ Indicators of spoofed domains:
 - Recently registered domains
 
 Domain spoofing is commonly used in phishing campaigns.
+Definition
+
+Domain spoofing is when attackers create deceptive domains or forge email headers to appear as trusted organizations.
+
+Types
+
+Typosquatting (gooogle.com)
+
+Homograph attacks (раypal.com using Cyrillic)
+
+Subdomain spoofing (paypal.security-update.com)
+
+Email header spoofing
+
+Lookalike domains
+
+Detection Signals
+
+Levenshtein distance from legitimate domain
+
+Unicode characters in domain
+
+Newly registered domain
+
+Missing SPF/DKIM/DMARC
+
+Suspicious MX records
+Prevention Methods
+
+SPF, DKIM, DMARC setup
+
+BIMI implementation
+
+Brand monitoring
+
+User education
+
+2FA / MFA
+
+Secure Email Gateways
+
+DNS monitoring

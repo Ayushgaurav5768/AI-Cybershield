@@ -2,28 +2,38 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>AI CyberShield - AI Assistant</title>
+    <title>AI CyberShield - Assistant</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-    <div class="assistant-container">
+<nav class="top-nav">
+    <div class="logo">AI CyberShield</div>
+    <div class="nav-links">
+        <a href="index.html">Scanner</a>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="assistant.html" class="active">AI Assistant</a>
+    </div>
+</nav>
 
-    <h1 class="assistant-title">🤖 AI Cyber Awareness Assistant</h1>
+<div class="assistant-container">
 
-    <div class="chat-window" id="chatBox"></div>
-
-    <div class="chat-input-area">
-        <input type="text" id="userMessage" placeholder="Ask about phishing...">
-        <button onclick="sendMessage()">Send</button>
+    <div class="assistant-header">
+        <h2>AI Cyber Intelligence Assistant</h2>
+        <p>Ask anything about phishing, spoofing, SSL attacks & cyber threats</p>
     </div>
 
-    <div class="nav-links">
-        <a href="index.html">🔍 Back to Scanner</a>
+    <div id="chat-box" class="chat-box"></div>
+
+    <div class="chat-input-area">
+        <input type="text" id="question" placeholder="Ask about cybersecurity threats..." />
+        <button onclick="askAssistant()">Send</button>
     </div>
 
 </div>
 
-    <script src="js/assistant.js"></script>
+<script src="js/api.js"></script>
+<script src="js/assistant.js"></script>
+
 </body>
 </html>

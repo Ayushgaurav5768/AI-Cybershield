@@ -15,3 +15,91 @@ Indicators:
 - Connection not secure message
 
 Always verify HTTPS certificate authenticity.
+Email Header Analysis
+
+Knowledge chunks:
+
+SPF (Sender Policy Framework)
+
+Validates sending server IP
+
+Checks against DNS TXT records
+
+Fail → possible spoofing
+
+DKIM (DomainKeys Identified Mail)
+
+Cryptographic signature
+
+Verifies message integrity
+
+Failure → possible tampering
+
+DMARC
+
+Policy enforcement layer
+
+Aligns SPF + DKIM
+
+Can be:
+
+none
+
+quarantine
+
+reject
+
+🌍 Domain Intelligence
+WHOIS Features
+
+Domain age
+
+Registrar
+
+Registration country
+
+Recently registered domains → higher risk
+
+DNS Features
+
+A record
+
+MX record
+
+TXT record
+
+NS record
+
+DNSSEC presence
+
+SSL/TLS Features
+
+Valid certificate?
+
+Issuer
+
+Self-signed?
+
+Expiry date
+
+🔎 URL-Based Features (ML Ready)
+
+These are perfect RAG chunks:
+
+URL length
+
+Number of dots
+
+Presence of IP instead of domain
+
+Use of @ symbol
+
+Presence of “-”
+
+Suspicious keywords (login, verify, update)
+
+HTTPS token misuse
+
+Favicon mismatch
+
+Redirect chain depth
