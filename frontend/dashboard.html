@@ -3,53 +3,120 @@
 <head>
     <title>Threat Intelligence Dashboard</title>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css?v=20260418-premium">
 </head>
 <body>
 
-<div class="container">
+<nav class="top-nav">
+    <div class="logo">AI CyberShield</div>
+    <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation" aria-expanded="false" aria-controls="primaryNav">
+        <span></span><span></span><span></span>
+    </button>
+    <div class="nav-links" id="primaryNav">
+        <a href="index.html">Scanner</a>
+        <a href="dashboard.html" class="active"><span class="nav-icon" aria-hidden="true">&#128202;</span>Dashboard</a>
+        <a href="assistant.html">AI Assistant</a>
+    </div>
+</nav>
 
-    <h1 class="title">Threat Intelligence Dashboard</h1>
+<div class="orb orb-left"></div>
+<div class="orb orb-right"></div>
 
-    <div class="stats-grid">
-        <div class="card">
+<div class="container dashboard-layout">
+
+    <div class="section-head reveal">
+        <div>
+            <p class="eyebrow">Security telemetry</p>
+            <h1 class="title">Threat Intelligence Dashboard</h1>
+        </div>
+        <button id="refreshDashboard" class="ghost-button">Refresh</button>
+    </div>
+
+    <div class="stats-grid reveal">
+        <div class="card stat-card">
             <h3>Total Scans</h3>
             <p id="totalScans">0</p>
         </div>
 
-        <div class="card phishing">
+        <div class="card stat-card phishing">
             <h3>Phishing Detected</h3>
             <p id="phishingCount">0</p>
         </div>
 
-        <div class="card safe">
+        <div class="card stat-card safe">
             <h3>Safe Websites</h3>
             <p id="safeCount">0</p>
         </div>
+
+        <div class="card stat-card">
+            <h3>Queued Reports</h3>
+            <p id="reportsPending">0</p>
+        </div>
+
+        <div class="card stat-card">
+            <h3>Extension Events</h3>
+            <p id="extensionEventsCount">0</p>
+        </div>
     </div>
 
-    <div class="chart-card card">
-        <canvas id="threatChart"></canvas>
+    <div class="dashboard-charts reveal">
+        <div class="chart-card card">
+            <h3>Phishing vs Safe</h3>
+            <canvas id="threatChart"></canvas>
+        </div>
+        <div class="chart-card card">
+            <h3>7-Day Trend</h3>
+            <canvas id="trendChart"></canvas>
+        </div>
     </div>
 
-    <div class="card table-card">
-        <h2>Recent Scan Activity</h2>
-        <table id="scanTable">
-            <thead>
-                <tr>
-                    <th>URL</th>
-                    <th>Prediction</th>
-                    <th>Risk %</th>
-                    <th>Time</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+    <div class="dashboard-columns reveal">
+        <div class="card table-card">
+            <h2>Top Domains by Risk</h2>
+            <table id="domainTable">
+                <thead>
+                    <tr>
+                        <th>Domain</th>
+                        <th>Hits</th>
+                        <th>Avg Risk</th>
+                        <th>Phishing Hits</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div class="card table-card">
+            <h2>Recent Scan Activity</h2>
+            <table id="scanTable">
+                <thead>
+                    <tr>
+                        <th>URL</th>
+                        <th>Prediction</th>
+                        <th>Risk %</th>
+                        <th>Time</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card table-card reveal">
+        <h2>Extension Event Feed</h2>
+        <ul id="eventFeed" class="event-feed">
+            <li class="muted">No extension events yet.</li>
+        </ul>
     </div>
 
 </div>
 
+<script src="js/ui.js"></script>
 <script src="js/dashboard.js"></script>
 </body>
 </html>

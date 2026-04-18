@@ -2,36 +2,54 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI CyberShield - Assistant</title>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css?v=20260418-premium">
 </head>
 <body>
 
 <nav class="top-nav">
     <div class="logo">AI CyberShield</div>
-    <div class="nav-links">
+    <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation" aria-expanded="false" aria-controls="primaryNav">
+        <span></span><span></span><span></span>
+    </button>
+    <div class="nav-links" id="primaryNav">
         <a href="index.html">Scanner</a>
-        <a href="dashboard.html">Dashboard</a>
+        <a href="dashboard.html"><span class="nav-icon" aria-hidden="true">&#128202;</span>Dashboard</a>
         <a href="assistant.html" class="active">AI Assistant</a>
     </div>
 </nav>
 
+<div class="orb orb-left"></div>
+<div class="orb orb-right"></div>
+
 <div class="assistant-container">
 
     <div class="assistant-header">
+        <p class="eyebrow">Threat Education Copilot</p>
         <h2>AI Cyber Intelligence Assistant</h2>
-        <p>Ask anything about phishing, spoofing, SSL attacks & cyber threats</p>
+        <p>Ask anything about phishing, spoofing, SSL attacks, social engineering, and secure response plans.</p>
+    </div>
+
+    <div id="quickQuestions" class="chips">
+        <button class="chip" data-question="How do I verify if an email login link is phishing?">Email login link check</button>
+        <button class="chip" data-question="What are the strongest signs of domain spoofing?">Domain spoofing signals</button>
+        <button class="chip" data-question="Give me a 5-step employee response playbook for suspected phishing.">Response playbook</button>
     </div>
 
     <div id="chat-box" class="chat-box"></div>
 
     <div class="chat-input-area">
         <input type="text" id="question" placeholder="Ask about cybersecurity threats..." />
-        <button onclick="askAssistant()">Send</button>
+        <button id="sendBtn" onclick="askAssistant()">Send</button>
     </div>
 
 </div>
 
+<script src="js/ui.js"></script>
 <script src="js/api.js"></script>
 <script src="js/assistant.js"></script>
 

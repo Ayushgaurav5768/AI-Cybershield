@@ -1,1 +1,16 @@
 .env
+
+# Python caches and bytecode
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+venv/
+.venv/
+
+# Test caches
+.pytest_cache/
+
+# Local OS/editor noise
+.DS_Store
+Thumbs.db

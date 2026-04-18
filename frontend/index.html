@@ -2,53 +2,94 @@
 <html>
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI CyberShield</title>
-
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css?v=20260418-premium">
 </head>
 
 <body>
     <nav class="top-nav">
-    <div class="logo">AI CyberShield</div>
-    <div class="nav-links">
-        <a href="index.html">Scanner</a>
-        <a href="dashboard.html">Dashboard</a>
-        <a href="assistant.html">AI Assistant</a>
-    </div>
-</nav>
-
-
-<div class="container">
-
-    <h1 class="title">AI CyberShield</h1>
-    <p class="subtitle">Enterprise Threat Intelligence Engine</p>
-
-    <div class="card scan-card">
-
-        <input type="text" id="urlInput" placeholder="Enter suspicious URL..." />
-
-        <button id="scanBtn">Analyze Threat</button>
-
-        <div class="result-box">
-            <h3 id="result">Awaiting scan...</h3>
+        <div class="logo">AI CyberShield</div>
+        <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation" aria-expanded="false" aria-controls="primaryNav">
+            <span></span><span></span><span></span>
+        </button>
+        <div class="nav-links" id="primaryNav">
+            <a href="index.html" class="active">Scanner</a>
+            <a href="dashboard.html"><span class="nav-icon" aria-hidden="true">&#128202;</span>Dashboard</a>
+            <a href="assistant.html">AI Assistant</a>
         </div>
+    </nav>
 
-        <div class="risk-container">
-            <canvas id="riskGauge" width="250" height="250"></canvas>
-            <div class="risk-text">
-                <span id="riskPercent">0%</span>
+    <div class="orb orb-left"></div>
+    <div class="orb orb-right"></div>
+
+    <main class="container page-grid">
+        <section class="hero-card reveal">
+            <p class="eyebrow">Live URL Defense</p>
+            <h1 class="title">Scan suspicious links in seconds</h1>
+            <p class="subtitle">Hybrid AI + heuristics + threat intelligence scoring with analyst-friendly explainability.</p>
+            <div class="chips" id="sampleUrls">
+                <button class="chip" data-url="https://secure-update-paypal-support.com/login">Fake PayPal Login</button>
+                <button class="chip" data-url="https://account-verify-microsoft-help.net">Spoofed Microsoft Portal</button>
+                <button class="chip" data-url="https://example.com">Benign Example</button>
             </div>
-        </div>
+        </section>
 
-    </div>
+        <section class="card scan-card reveal">
+            <div class="scan-input-wrap">
+                <input type="text" id="urlInput" placeholder="Enter URL to inspect (https://...)" />
+                <button id="scanBtn">Analyze Threat</button>
+            </div>
+            <p id="scanStatus" class="scan-status">Ready to scan.</p>
 
-    <div class="nav-links">
-        <a href="dashboard.html">📊 Intelligence Dashboard</a>
-    </div>
+            <div class="result-box">
+                <h3 id="result">Awaiting scan...</h3>
+                <div class="result-meta">
+                    <span id="riskLevel" class="pill neutral">risk level: unknown</span>
+                    <span id="confidence" class="pill neutral">confidence: 0%</span>
+                </div>
+                <p id="recommendedAction" class="muted">Recommended action will appear after scan.</p>
+            </div>
 
-</div>
+            <div class="insight-grid">
+                <div class="risk-container">
+                    <canvas id="riskGauge" width="240" height="240"></canvas>
+                    <div class="risk-text">
+                        <span id="riskPercent">0%</span>
+                    </div>
+                </div>
+                <div class="insights-card">
+                    <h4>Why this score</h4>
+                    <ul id="reasonsList" class="reasons-list">
+                        <li>No data yet.</li>
+                    </ul>
+                </div>
+            </div>
 
+            <div class="signals-panel">
+                <h4>Detected Signals</h4>
+                <div id="signalsGrid" class="signals-grid">
+                    <p class="muted">Signals will appear after scan.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card history-card reveal">
+            <div class="section-head">
+                <h3>Recent Local Scan Snapshots</h3>
+                <a class="inline-link" href="dashboard.html">Open dashboard</a>
+            </div>
+            <ul id="historyList" class="history-list">
+                <li class="muted">No local history yet.</li>
+            </ul>
+        </section>
+    </main>
+
+<script src="js/ui.js"></script>
 <script src="js/api.js"></script>
 
 </body>

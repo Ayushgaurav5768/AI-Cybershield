@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>CyberShield Options</title>
+  <style>
+    body { font-family: "Segoe UI", sans-serif; background: #0f172a; color: #e2e8f0; padding: 24px; }
+    .panel { max-width: 640px; margin: 0 auto; background: #111827; border: 1px solid #334155; border-radius: 12px; padding: 20px; }
+    label { display: block; margin: 12px 0; }
+    button { margin-top: 14px; background: #22d3ee; color: #0f172a; border: 0; border-radius: 8px; padding: 10px 16px; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <div class="panel">
+    <h2>CyberShield Extension Settings</h2>
+    <label><input type="checkbox" id="autoScan" /> Auto-scan on page load</label>
+    <label><input type="checkbox" id="warnForms" /> Warn on credential form submit</label>
+    <label><input type="checkbox" id="blockDangerous" /> Redirect dangerous pages to warning screen</label>
+    <button id="saveBtn">Save Settings</button>
+    <div id="msg"></div>
+  </div>
+  <script src="options.js"></script>
+</body>
+</html>

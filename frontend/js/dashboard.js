@@ -1,73 +1,210 @@
 const API_BASE = "http://127.0.0.1:8000";
 
-let chartInstance = null;
+let threatChartInstance = null;
+let trendChartInstance = null;
+
+document.addEventListener("DOMContentLoaded", () => {
+    const refreshBtn = document.getElementById("refreshDashboard");
+    if (refreshBtn) {
+        refreshBtn.addEventListener("click", () => {
+            loadDashboard();
+        });
+    }
+
+    loadDashboard();
+});
 
 async function loadDashboard() {
     try {
-        const response = await fetch(`${API_BASE}/dashboard`);
-        const data = await response.json();
+        const [metricsRes, trendsRes, domainsRes, eventsRes, recentRes] = await Promise.all([
+            fetch(`${API_BASE}/dashboard/metrics`),
+            fetch(`${API_BASE}/dashboard/trends?limit_days=7`),
+            fetch(`${API_BASE}/dashboard/top-domains?limit=10`),
+            fetch(`${API_BASE}/dashboard/extension-events?limit=20`),
+            fetch(`${API_BASE}/recent-scans`)
+        ]);
 
-        document.getElementById("totalScans").innerText = data.total_scans;
-        document.getElementById("phishingCount").innerText = data.phishing_count;
-        document.getElementById("safeCount").innerText = data.safe_count;
+        const metrics = await metricsRes.json();
+        const trends = await trendsRes.json();
+        const domains = await domainsRes.json();
+        const events = await eventsRes.json();
+        const recentScans = await recentRes.json();
 
-        createChart(data.phishing_count, data.safe_count);
-
-        loadRecentScans();
-
+        updateMetrics(metrics);
+        createThreatChart(metrics.phishing_count || 0, metrics.safe_count || 0);
+        createTrendChart(trends || []);
+        renderTopDomains(domains || []);
+        renderRecentScans(recentScans || []);
+        renderEventFeed(events || []);
     } catch (error) {
-        console.error("Error fetching dashboard data:", error);
+        console.error("Error loading dashboard:", error);
     }
 }
 
-function createChart(phishing, safe) {
-    const ctx = document.getElementById("threatChart").getContext("2d");
+function updateMetrics(metrics) {
+    setText("totalScans", metrics.total_scans || 0);
+    setText("phishingCount", metrics.phishing_count || 0);
+    setText("safeCount", metrics.safe_count || 0);
+    setText("reportsPending", metrics.reports_pending || 0);
+    setText("extensionEventsCount", metrics.extension_events || 0);
+}
 
-    if (chartInstance) {
-        chartInstance.destroy();
+function createThreatChart(phishing, safe) {
+    const canvas = document.getElementById("threatChart");
+    if (!canvas) {
+        return;
     }
 
-    chartInstance = new Chart(ctx, {
+    if (threatChartInstance) {
+        threatChartInstance.destroy();
+    }
+
+    threatChartInstance = new Chart(canvas.getContext("2d"), {
         type: "doughnut",
         data: {
             labels: ["Phishing", "Safe"],
             datasets: [{
                 data: [phishing, safe],
-                backgroundColor: ["#ef4444", "#22c55e"]
+                backgroundColor: ["#ff4d6d", "#41d98e"],
+                borderWidth: 0
             }]
         },
         options: {
-            responsive: true
+            cutout: "72%",
+            plugins: {
+                legend: {
+                    labels: { color: "#f5f7fb" }
+                }
+            }
         }
     });
 }
 
-async function loadRecentScans() {
-    try {
-        const response = await fetch(`${API_BASE}/recent-scans`);
-        const data = await response.json();
+function createTrendChart(trends) {
+    const canvas = document.getElementById("trendChart");
+    if (!canvas) {
+        return;
+    }
 
-        const tableBody = document.querySelector("#scanTable tbody");
-        tableBody.innerHTML = "";
+    if (trendChartInstance) {
+        trendChartInstance.destroy();
+    }
 
-        data.forEach(scan => {
-            const row = document.createElement("tr");
+    const labels = trends.map((item) => item.day);
+    const phishingData = trends.map((item) => item.phishing || 0);
+    const safeData = trends.map((item) => item.safe || 0);
 
-            row.innerHTML = `
-                <td>${scan.url}</td>
-                <td style="color:${scan.prediction === "Phishing" ? "red" : "green"}">
-                    ${scan.prediction}
-                </td>
-                <td>${scan.risk_score}%</td>
-                <td>${new Date(scan.created_at).toLocaleString()}</td>
-            `;
+    trendChartInstance = new Chart(canvas.getContext("2d"), {
+        type: "line",
+        data: {
+            labels,
+            datasets: [
+                {
+                    label: "Phishing",
+                    data: phishingData,
+                    borderColor: "#ff4d6d",
+                    backgroundColor: "rgba(255,77,109,0.2)",
+                    tension: 0.35,
+                    fill: true
+                },
+                {
+                    label: "Safe",
+                    data: safeData,
+                    borderColor: "#41d98e",
+                    backgroundColor: "rgba(65,217,142,0.2)",
+                    tension: 0.35,
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            plugins: {
+                legend: { labels: { color: "#f5f7fb" } }
+            },
+            scales: {
+                x: {
+                    ticks: { color: "#a8b0bf" },
+                    grid: { color: "rgba(255,255,255,0.08)" }
+                },
+                y: {
+                    ticks: { color: "#a8b0bf" },
+                    grid: { color: "rgba(255,255,255,0.08)" }
+                }
+            }
+        }
+    });
+}
 
-            tableBody.appendChild(row);
-        });
+function renderTopDomains(domains) {
+    const body = document.querySelector("#domainTable tbody");
+    if (!body) {
+        return;
+    }
 
-    } catch (error) {
-        console.error("Error loading recent scans:", error);
+    body.innerHTML = "";
+    domains.forEach((domain) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td>${escapeHtml(domain.domain || "unknown")}</td>
+            <td>${domain.count || 0}</td>
+            <td>${domain.avg_risk || 0}%</td>
+            <td>${domain.phishing_hits || 0}</td>
+        `;
+        body.appendChild(row);
+    });
+}
+
+function renderRecentScans(scans) {
+    const body = document.querySelector("#scanTable tbody");
+    if (!body) {
+        return;
+    }
+
+    body.innerHTML = "";
+    scans.forEach((scan) => {
+        const row = document.createElement("tr");
+        const labelColor = scan.prediction === "Phishing" ? "#ff4d6d" : "#41d98e";
+        row.innerHTML = `
+            <td>${escapeHtml(scan.url)}</td>
+            <td style="color:${labelColor}; font-weight:700;">${escapeHtml(scan.prediction)}</td>
+            <td>${scan.risk_score || 0}%</td>
+            <td>${new Date(scan.created_at).toLocaleString()}</td>
+        `;
+        body.appendChild(row);
+    });
+}
+
+function renderEventFeed(events) {
+    const list = document.getElementById("eventFeed");
+    if (!list) {
+        return;
+    }
+
+    list.innerHTML = "";
+    if (events.length === 0) {
+        list.innerHTML = `<li class="muted">No extension events yet.</li>`;
+        return;
+    }
+
+    events.forEach((event) => {
+        const li = document.createElement("li");
+        li.innerHTML = `<strong>${escapeHtml(event.event_type || "event")}</strong> | ${escapeHtml(event.url || "n/a")} | ${escapeHtml(event.risk_level || "unknown")} | ${new Date(event.created_at).toLocaleString()}`;
+        list.appendChild(li);
+    });
+}
+
+function setText(id, value) {
+    const el = document.getElementById(id);
+    if (el) {
+        el.textContent = String(value);
     }
 }
 
-window.onload = loadDashboard;
+function escapeHtml(text) {
+    return String(text)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+}
