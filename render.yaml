@@ -9,7 +9,7 @@ services:
       - key: ENVIRONMENT
         value: production
       - key: CORS_ORIGINS
-        value: https://my-vercel-app.vercel.app
+        value: https://ai-cybershield-phi.vercel.app
       - key: DATABASE_URL
         value: sqlite:///./cybershield.db
       - key: WARM_ASSISTANT_ON_STARTUP
