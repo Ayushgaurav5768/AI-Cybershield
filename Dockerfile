@@ -10,7 +10,11 @@ WORKDIR /app
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+COPY app ./app
+COPY core ./core
+COPY ml ./ml
+COPY utils ./utils
+COPY run.py ./run.py
 
 EXPOSE 8000
 
