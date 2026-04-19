@@ -12,9 +12,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app ./app
 COPY core ./core
-COPY ml ./ml
 COPY utils ./utils
 COPY run.py ./run.py
+
+RUN mkdir -p ml
+COPY ml/model.pkl ./ml/model.pkl
+COPY ml/model_meta.json ./ml/model_meta.json
 
 EXPOSE 8000
 

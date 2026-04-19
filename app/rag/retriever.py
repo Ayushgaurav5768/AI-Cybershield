@@ -1,49 +1,53 @@
 from functools import lru_cache
+from pathlib import Path
+import re
+from typing import List
 
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_community.vectorstores import FAISS
-from langchain_openai import ChatOpenAI
+from openai import OpenAI
 
 from core.config import settings
 
 try:
-    from langchain_google_genai import ChatGoogleGenerativeAI
+    import google.generativeai as genai
 except ImportError:
-    ChatGoogleGenerativeAI = None
+    genai = None
 
 
 @lru_cache(maxsize=1)
-def _get_embeddings():
-    return HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+def _knowledge_chunks() -> List[str]:
+    kb_dir = Path("app/rag/knowledge_base")
+    chunks: list[str] = []
 
+    for txt_file in sorted(kb_dir.glob("*.txt")):
+        try:
+            content = txt_file.read_text(encoding="utf-8", errors="ignore")
+        except OSError:
+            continue
 
-@lru_cache(maxsize=1)
-def _get_vector_store():
-    embeddings = _get_embeddings()
-    return FAISS.load_local(
-        "app/rag/faiss_index",
-        embeddings,
-        allow_dangerous_deserialization=True
-    )
+        parts = [part.strip() for part in re.split(r"\n\s*\n", content) if part.strip()]
+        for part in parts:
+            if len(part) <= 750:
+                chunks.append(part)
+                continue
+
+            for i in range(0, len(part), 650):
+                piece = part[i:i + 750].strip()
+                if piece:
+                    chunks.append(piece)
+
+    return chunks
 
 
 @lru_cache(maxsize=1)
 def _build_chat_model():
     if settings.gemini_api_key:
-        if ChatGoogleGenerativeAI is None:
-            raise RuntimeError("langchain-google-genai is not installed")
-        return ChatGoogleGenerativeAI(
-            model=settings.gemini_model,
-            temperature=0.3,
-            google_api_key=settings.gemini_api_key,
-        )
+        if genai is None:
+            raise RuntimeError("google-generativeai is not installed")
+        genai.configure(api_key=settings.gemini_api_key)
+        return ("gemini", genai.GenerativeModel(settings.gemini_model))
 
     if settings.openai_api_key:
-        return ChatOpenAI(
-            model=settings.openai_model,
-            temperature=0.3,
-            api_key=settings.openai_api_key,
-        )
+        return ("openai", OpenAI(api_key=settings.openai_api_key))
 
     raise RuntimeError("No supported AI provider key found")
 
@@ -52,22 +56,57 @@ def _normalize_query(query: str) -> str:
     return " ".join(query.split()).strip().lower()
 
 
+def _top_context(query: str, k: int = 3) -> str:
+    terms = set(re.findall(r"[a-z0-9]+", query.lower()))
+    if not terms:
+        return ""
+
+    scored: list[tuple[float, str]] = []
+    for chunk in _knowledge_chunks():
+        words = set(re.findall(r"[a-z0-9]+", chunk.lower()))
+        if not words:
+            continue
+        overlap = len(terms & words)
+        if overlap == 0:
+            continue
+        score = overlap / max(1, len(terms))
+        scored.append((score, chunk))
+
+    if not scored:
+        return ""
+
+    top_chunks = [chunk for _, chunk in sorted(scored, key=lambda item: item[0], reverse=True)[:k]]
+    return "\n\n".join(top_chunks)
+
+
+def _generate_answer(prompt: str) -> str:
+    provider, client = _build_chat_model()
+
+    if provider == "gemini":
+        response = client.generate_content(prompt)
+        text = getattr(response, "text", None)
+        if text and text.strip():
+            return text.strip()
+        return "I could not generate a response right now. Please try again."
+
+    response = client.responses.create(
+        model=settings.openai_model,
+        input=prompt,
+    )
+    text = getattr(response, "output_text", "")
+    if text and text.strip():
+        return text.strip()
+    return "I could not generate a response right now. Please try again."
+
+
 def warm_assistant_assets():
-    _get_embeddings()
-    _get_vector_store()
+    _knowledge_chunks()
     _build_chat_model()
 
 
 @lru_cache(maxsize=128)
 def _get_rag_response_cached(normalized_query: str):
-    vector_store = _get_vector_store()
-    retriever = vector_store.as_retriever(search_kwargs={"k": 1})
-
-    docs = retriever.invoke(normalized_query)
-
-    context = "\n\n".join([doc.page_content[:700] for doc in docs])
-
-    llm = _build_chat_model()
+    context = _top_context(normalized_query, k=3)
 
     prompt = (
         "Answer briefly and clearly using the context. "
@@ -77,9 +116,7 @@ def _get_rag_response_cached(normalized_query: str):
         "Answer:"
     )
 
-    response = llm.invoke(prompt)
-
-    return response.content
+    return _generate_answer(prompt)
 
 
 def get_rag_response(query: str):
