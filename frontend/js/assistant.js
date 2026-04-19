@@ -46,26 +46,37 @@ async function askAssistant() {
     chatBox.scrollTop = chatBox.scrollHeight;
 
     try {
-        const response = await fetch(`${API_BASE}/assistant`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ question })
-        });
+        const request = window.apiRequest
+            ? window.apiRequest("/assistant", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ question })
+            }, 20000)
+            : fetch(`${window.API_BASE || "http://127.0.0.1:8000"}/assistant`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ question })
+            }).then(async (response) => {
+                const rawText = await response.text();
+                let payload = null;
+                try {
+                    payload = rawText ? JSON.parse(rawText) : null;
+                } catch {
+                    payload = null;
+                }
 
-        let payload = null;
-        const rawText = await response.text();
-        try {
-            payload = rawText ? JSON.parse(rawText) : null;
-        } catch {
-            payload = null;
-        }
+                if (!response.ok) {
+                    throw new Error(payload?.detail || "Assistant request failed.");
+                }
 
-        if (!response.ok) {
-            const fallback = payload?.detail || "Assistant request failed.";
-            throw new Error(fallback);
-        }
+                return payload;
+            });
+
+        const payload = await request;
 
         typingDiv.remove();
 

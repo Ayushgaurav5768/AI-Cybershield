@@ -1,4 +1,17 @@
-const API_BASE = "http://127.0.0.1:8000";
+const LOCAL_API_BASE = "http://127.0.0.1:8000";
+const PROD_API_BASE = "https://your-backend-service.up.railway.app";
+const API_TIMEOUT_MS = 12000;
+
+function resolveApiBase() {
+    const hostname = window.location.hostname;
+    return hostname === "localhost" || hostname === "127.0.0.1" ? LOCAL_API_BASE : PROD_API_BASE;
+}
+
+const API_BASE = resolveApiBase();
+
+window.API_BASE = API_BASE;
+window.apiRequest = apiRequest;
+
 let gaugeChart = null;
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -48,17 +61,12 @@ async function runScan() {
     button.disabled = true;
 
     try {
-        const response = await fetch(`${API_BASE}/scan`, {
+        const data = await apiRequest("/scan", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ url })
         });
 
-        if (!response.ok) {
-            throw new Error("Scan failed");
-        }
-
-        const data = await response.json();
         renderScanResult(data);
         saveHistory({
             url,
@@ -69,10 +77,60 @@ async function runScan() {
         });
         status.textContent = "Scan complete.";
     } catch (err) {
-        status.textContent = "Unable to complete scan. Confirm backend service is running.";
+        const message = err?.message || "Unable to complete scan. Confirm backend service is running.";
+        status.textContent = message;
         console.error(err);
     } finally {
         button.disabled = false;
+    }
+}
+
+async function apiRequest(path, options = {}, timeoutMs = API_TIMEOUT_MS) {
+    const { signal, ...fetchOptions } = options;
+    const response = await fetchWithTimeout(`${API_BASE}${path}`, fetchOptions, timeoutMs, signal);
+
+    const rawText = await response.text();
+    let payload = null;
+    if (rawText) {
+        try {
+            payload = JSON.parse(rawText);
+        } catch {
+            payload = null;
+        }
+    }
+
+    if (!response.ok) {
+        const detail = payload?.detail || payload?.message || rawText || `Request failed with status ${response.status}`;
+        throw new Error(String(detail));
+    }
+
+    return payload;
+}
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = API_TIMEOUT_MS, externalSignal) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    if (externalSignal) {
+        if (externalSignal.aborted) {
+            clearTimeout(timeoutId);
+            throw new Error("Request aborted.");
+        }
+        externalSignal.addEventListener("abort", () => controller.abort(), { once: true });
+    }
+
+    try {
+        return await fetch(url, {
+            ...options,
+            signal: controller.signal
+        });
+    } catch (error) {
+        if (error?.name === "AbortError") {
+            throw new Error(`Request timed out after ${Math.ceil(timeoutMs / 1000)}s.`);
+        }
+        throw error;
+    } finally {
+        clearTimeout(timeoutId);
     }
 }
 
@@ -177,10 +235,10 @@ function animateCounter(target) {
 }
 
 function riskClass(level) {
-    if (level === "critical" || level === "high") {
+    if (level === "dangerous" || level === "critical" || level === "high") {
         return "danger";
     }
-    if (level === "medium") {
+    if (level === "suspicious" || level === "medium" || level === "warn") {
         return "warn";
     }
     return "safe";

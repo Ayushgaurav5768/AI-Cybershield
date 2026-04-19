@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi import Request
+import logging
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -11,6 +12,9 @@ from app.models.scan_model import Base, Scan
 from app.rag.retriever import warm_assistant_assets
 from core.config import settings
 from core.security import rate_limiter
+
+
+logger = logging.getLogger(__name__)
 
 # Create DB tables
 Base.metadata.create_all(bind=engine)
@@ -30,7 +34,17 @@ app.add_middleware(
 
 @app.on_event("startup")
 def preload_assistant_stack():
-    warm_assistant_assets()
+    if not settings.warm_assistant_on_startup:
+        return
+    if not settings.has_ai_api_key:
+        logger.info("Skipping assistant warmup: no AI API key configured")
+        return
+
+    try:
+        warm_assistant_assets()
+        logger.info("Assistant assets warmed successfully")
+    except Exception as exc:
+        logger.warning("Assistant warmup failed: %s", exc, exc_info=True)
 
 
 @app.middleware("http")

@@ -26,6 +26,8 @@ class Settings:
     gemini_api_key: str = os.getenv("GEMINI_API_KEY", os.getenv("GOOGLE_API_KEY", ""))
     openai_model: str = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
     gemini_model: str = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+    warm_assistant_on_startup: bool = _to_bool(os.getenv("WARM_ASSISTANT_ON_STARTUP"), default=False)
+    enable_rag_scan_explanation: bool = _to_bool(os.getenv("ENABLE_RAG_SCAN_EXPLANATION"), default=False)
 
     max_scan_requests_per_minute: int = int(os.getenv("MAX_SCAN_REQUESTS_PER_MINUTE", "120"))
     max_general_requests_per_minute: int = int(os.getenv("MAX_GENERAL_REQUESTS_PER_MINUTE", "300"))

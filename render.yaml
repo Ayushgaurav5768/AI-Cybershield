@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: ai-cybershield-backend
+    env: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    autoDeploy: true
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: CORS_ORIGINS
+        value: https://my-vercel-app.vercel.app
+      - key: DATABASE_URL
+        value: sqlite:///./cybershield.db
+      - key: WARM_ASSISTANT_ON_STARTUP
+        value: "false"
+      - key: ENABLE_RAG_SCAN_EXPLANATION
+        value: "false"
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.0-flash
