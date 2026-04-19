@@ -20,7 +20,10 @@ class Settings:
     debug: bool = _to_bool(os.getenv("DEBUG"), default=False)
 
     database_url: str = os.getenv("DATABASE_URL", "sqlite:///./cybershield.db")
-    cors_origins: str = os.getenv("CORS_ORIGINS", "*")
+    cors_origins: str = os.getenv(
+        "CORS_ORIGINS",
+        "http://127.0.0.1:8000,https://ai-cybershield-phi.vercel.app"
+    )
 
     openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
     gemini_api_key: str = os.getenv("GEMINI_API_KEY", os.getenv("GOOGLE_API_KEY", ""))
