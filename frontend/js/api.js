@@ -1,5 +1,5 @@
 const LOCAL_API_BASE = "http://127.0.0.1:8000";
-const PROD_API_BASE = "https://your-backend-service.up.railway.app";
+const PROD_API_BASE = "https://ai-cybershield-backend-production.up.railway.app";
 const API_TIMEOUT_MS = 12000;
 
 function resolveApiBase() {
