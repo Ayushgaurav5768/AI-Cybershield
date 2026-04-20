@@ -24,6 +24,7 @@ class Settings:
         "CORS_ORIGINS",
         "http://127.0.0.1:8000,https://ai-cybershield-phi.vercel.app"
     )
+    cors_origin_regex: str = os.getenv("CORS_ORIGIN_REGEX", r"https://.*\.vercel\.app")
 
     openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
     gemini_api_key: str = os.getenv("GEMINI_API_KEY", os.getenv("GOOGLE_API_KEY", ""))

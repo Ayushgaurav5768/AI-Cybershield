@@ -1,4 +1,12 @@
-const API_BASE = "http://127.0.0.1:8000";
+const LOCAL_API_BASE = "http://127.0.0.1:8000";
+const PROD_API_BASE = "https://ai-cybershield-backend-production.up.railway.app";
+
+function resolveApiBase() {
+    const hostname = window.location.hostname;
+    return hostname === "localhost" || hostname === "127.0.0.1" ? LOCAL_API_BASE : PROD_API_BASE;
+}
+
+const API_BASE = resolveApiBase();
 
 let threatChartInstance = null;
 let trendChartInstance = null;
@@ -24,6 +32,12 @@ async function loadDashboard() {
             fetch(`${API_BASE}/recent-scans`)
         ]);
 
+        ensureOk(metricsRes, "dashboard/metrics");
+        ensureOk(trendsRes, "dashboard/trends");
+        ensureOk(domainsRes, "dashboard/top-domains");
+        ensureOk(eventsRes, "dashboard/extension-events");
+        ensureOk(recentRes, "recent-scans");
+
         const metrics = await metricsRes.json();
         const trends = await trendsRes.json();
         const domains = await domainsRes.json();
@@ -37,7 +51,13 @@ async function loadDashboard() {
         renderRecentScans(recentScans || []);
         renderEventFeed(events || []);
     } catch (error) {
-        console.error("Error loading dashboard:", error);
+        console.error(`Error loading dashboard from ${API_BASE}:`, error);
+    }
+}
+
+function ensureOk(response, routeName) {
+    if (!response.ok) {
+        throw new Error(`${routeName} failed with status ${response.status}`);
     }
 }
 
