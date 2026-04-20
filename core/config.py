@@ -6,6 +6,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DEFAULT_SQLITE_PATH = os.path.join(ROOT_DIR, "cybershield.db")
+
 
 def _to_bool(value: str, default: bool = False) -> bool:
     if value is None:
@@ -19,7 +22,7 @@ class Settings:
     environment: str = os.getenv("ENVIRONMENT", "development")
     debug: bool = _to_bool(os.getenv("DEBUG"), default=False)
 
-    database_url: str = os.getenv("DATABASE_URL", "sqlite:///./cybershield.db")
+    database_url: str = os.getenv("DATABASE_URL", f"sqlite:///{DEFAULT_SQLITE_PATH.replace(os.sep, '/')}")
     cors_origins: str = os.getenv(
         "CORS_ORIGINS",
         "http://127.0.0.1:8000,https://ai-cybershield-phi.vercel.app"

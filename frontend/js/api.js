@@ -3,8 +3,17 @@ const PROD_API_BASE = "https://ai-cybershield-backend-production.up.railway.app"
 const API_TIMEOUT_MS = 12000;
 
 function resolveApiBase() {
+    const override = localStorage.getItem("apiBaseOverride");
+    if (override) {
+        return override;
+    }
+
+    if (window.location.protocol === "file:") {
+        return LOCAL_API_BASE;
+    }
+
     const hostname = window.location.hostname;
-    return hostname === "localhost" || hostname === "127.0.0.1" ? LOCAL_API_BASE : PROD_API_BASE;
+    return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "" ? LOCAL_API_BASE : PROD_API_BASE;
 }
 
 const API_BASE = resolveApiBase();

@@ -1,9 +1,19 @@
 const LOCAL_API_BASE = "http://127.0.0.1:8000";
 const PROD_API_BASE = "https://ai-cybershield-backend-production.up.railway.app";
+const API_TIMEOUT_MS = 12000;
 
 function resolveApiBase() {
+    const override = localStorage.getItem("apiBaseOverride");
+    if (override) {
+        return override;
+    }
+
+    if (window.location.protocol === "file:") {
+        return LOCAL_API_BASE;
+    }
+
     const hostname = window.location.hostname;
-    return hostname === "localhost" || hostname === "127.0.0.1" ? LOCAL_API_BASE : PROD_API_BASE;
+    return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "" ? LOCAL_API_BASE : PROD_API_BASE;
 }
 
 const API_BASE = resolveApiBase();
@@ -23,41 +33,69 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 async function loadDashboard() {
-    try {
-        const [metricsRes, trendsRes, domainsRes, eventsRes, recentRes] = await Promise.all([
-            fetch(`${API_BASE}/dashboard/metrics`),
-            fetch(`${API_BASE}/dashboard/trends?limit_days=7`),
-            fetch(`${API_BASE}/dashboard/top-domains?limit=10`),
-            fetch(`${API_BASE}/dashboard/extension-events?limit=20`),
-            fetch(`${API_BASE}/recent-scans`)
-        ]);
+    const [
+        metricsResult,
+        trendsResult,
+        domainsResult,
+        eventsResult,
+        recentResult
+    ] = await Promise.allSettled([
+        apiRequest("/dashboard/metrics"),
+        apiRequest("/dashboard/trends?limit_days=7"),
+        apiRequest("/dashboard/top-domains?limit=10"),
+        apiRequest("/dashboard/extension-events?limit=20"),
+        apiRequest("/recent-scans")
+    ]);
 
-        ensureOk(metricsRes, "dashboard/metrics");
-        ensureOk(trendsRes, "dashboard/trends");
-        ensureOk(domainsRes, "dashboard/top-domains");
-        ensureOk(eventsRes, "dashboard/extension-events");
-        ensureOk(recentRes, "recent-scans");
+    const metrics = readResult(metricsResult, { total_scans: 0, phishing_count: 0, safe_count: 0, reports_pending: 0, extension_events: 0 });
+    const trends = readResult(trendsResult, []);
+    const domains = readResult(domainsResult, []);
+    const events = readResult(eventsResult, []);
+    const recentScans = readResult(recentResult, []);
 
-        const metrics = await metricsRes.json();
-        const trends = await trendsRes.json();
-        const domains = await domainsRes.json();
-        const events = await eventsRes.json();
-        const recentScans = await recentRes.json();
+    const mergedRecentScans = mergeRecentScansWithLocal(recentScans);
 
-        updateMetrics(metrics);
-        createThreatChart(metrics.phishing_count || 0, metrics.safe_count || 0);
-        createTrendChart(trends || []);
-        renderTopDomains(domains || []);
-        renderRecentScans(recentScans || []);
-        renderEventFeed(events || []);
-    } catch (error) {
-        console.error(`Error loading dashboard from ${API_BASE}:`, error);
-    }
+    updateMetrics(metrics);
+    createThreatChart(metrics.phishing_count || 0, metrics.safe_count || 0);
+    createTrendChart(trends || []);
+    renderTopDomains(domains || []);
+    renderRecentScans(mergedRecentScans || []);
+    renderEventFeed(events || []);
 }
 
-function ensureOk(response, routeName) {
+function readResult(result, fallback) {
+    if (result.status === "fulfilled") {
+        return result.value;
+    }
+
+    console.error(`Dashboard request failed at ${API_BASE}:`, result.reason);
+    return fallback;
+}
+
+async function apiRequest(path, timeoutMs = API_TIMEOUT_MS) {
+    const response = await fetchWithTimeout(`${API_BASE}${path}`, {}, timeoutMs);
     if (!response.ok) {
-        throw new Error(`${routeName} failed with status ${response.status}`);
+        throw new Error(`${path} failed with status ${response.status}`);
+    }
+    return response.json();
+}
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = API_TIMEOUT_MS) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+        return await fetch(url, {
+            ...options,
+            signal: controller.signal
+        });
+    } catch (error) {
+        if (error?.name === "AbortError") {
+            throw new Error(`Request timed out after ${Math.ceil(timeoutMs / 1000)}s.`);
+        }
+        throw error;
+    } finally {
+        clearTimeout(timeoutId);
     }
 }
 
@@ -192,6 +230,57 @@ function renderRecentScans(scans) {
         `;
         body.appendChild(row);
     });
+}
+
+function mergeRecentScansWithLocal(serverScans) {
+    const localScans = getLocalHistoryEntries();
+    const normalizedServer = (serverScans || []).map((scan) => ({
+        ...scan,
+        created_at: scan.created_at || new Date().toISOString()
+    }));
+
+    const merged = [...normalizedServer, ...localScans];
+    merged.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    const deduped = [];
+    const seen = new Set();
+    for (const item of merged) {
+        const key = `${item.url}|${item.created_at}|${item.prediction}`;
+        if (seen.has(key)) {
+            continue;
+        }
+        seen.add(key);
+        deduped.push(item);
+        if (deduped.length >= 10) {
+            break;
+        }
+    }
+
+    return deduped;
+}
+
+function getLocalHistoryEntries() {
+    const candidates = ["scanHistory", "scan_history", "history"];
+    let history = [];
+
+    for (const key of candidates) {
+        try {
+            const parsed = JSON.parse(localStorage.getItem(key) || "[]");
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                history = parsed;
+                break;
+            }
+        } catch {
+            continue;
+        }
+    }
+
+    return history.map((item) => ({
+        url: item.url || "unknown",
+        prediction: item.prediction || (Number(item.risk || item.risk_score || 0) >= 45 ? "Phishing" : "Safe"),
+        risk_score: Number(item.risk_score ?? item.risk ?? 0),
+        created_at: item.created_at || item.at || new Date().toISOString()
+    }));
 }
 
 function renderEventFeed(events) {
