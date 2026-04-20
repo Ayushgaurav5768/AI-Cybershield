@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 import logging
 from app.rag.retriever import get_rag_response
+from app.rag.retriever import _build_chat_model
 from app.schemas.chat_schema import ChatRequest, ChatResponse
 from core.config import settings
 
@@ -23,9 +24,15 @@ def chat(request: ChatRequest):
         return {"response": answer}
     except Exception as e:
         logger.error(f"Assistant error: {type(e).__name__}: {e}", exc_info=True)
+        provider_hint = "Gemini" if settings.gemini_api_key else ("OpenAI" if settings.openai_api_key else "none")
+        try:
+            _build_chat_model.cache_clear()
+        except Exception:
+            pass
         return {
             "response": (
-                "Assistant temporarily failed to generate a response. "
-                "Please try again in a moment or verify your AI provider configuration."
+                "Assistant temporarily failed to generate a response from the configured AI provider. "
+                f"Current provider hint: {provider_hint}. Please verify the key, model access, and Railway redeploy. "
+                "If the issue persists, check the backend logs for the exact provider error."
             )
         }

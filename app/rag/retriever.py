@@ -99,6 +99,20 @@ def _generate_answer(prompt: str) -> str:
     return "I could not generate a response right now. Please try again."
 
 
+def _local_fallback_answer(query: str, context: str) -> str:
+    base = context.strip()
+    if base:
+        return (
+            "The AI provider is unavailable right now, so here is a local guidance summary based on the knowledge base:\n\n"
+            f"{base[:1200]}"
+        )
+
+    return (
+        "The AI provider is unavailable right now. Please verify the Gemini/OpenAI key in Railway, "
+        "redeploy the backend, and retry."
+    )
+
+
 def warm_assistant_assets():
     _knowledge_chunks()
     _build_chat_model()
@@ -116,7 +130,10 @@ def _get_rag_response_cached(normalized_query: str):
         "Answer:"
     )
 
-    return _generate_answer(prompt)
+    try:
+        return _generate_answer(prompt)
+    except Exception:
+        return _local_fallback_answer(normalized_query, context)
 
 
 def get_rag_response(query: str):
