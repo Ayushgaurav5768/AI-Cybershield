@@ -3,15 +3,17 @@ import logging
 from app.rag.retriever import get_rag_response
 from app.rag.retriever import _build_chat_model
 from app.schemas.chat_schema import ChatRequest, ChatResponse
-from core.config import settings
+from core.config import get_ai_settings
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 @router.post("/assistant", response_model=ChatResponse)
 def chat(request: ChatRequest):
+    ai_settings = get_ai_settings()
+
     # Fallback to offline guidance when no AI provider is configured.
-    if not settings.has_ai_api_key:
+    if not ai_settings.has_ai_api_key:
         return {
             "response": (
                 "Assistant is running in offline mode because no AI API key is configured. "
@@ -24,7 +26,7 @@ def chat(request: ChatRequest):
         return {"response": answer}
     except Exception as e:
         logger.error(f"Assistant error: {type(e).__name__}: {e}", exc_info=True)
-        provider_hint = "Gemini" if settings.gemini_api_key else ("OpenAI" if settings.openai_api_key else "none")
+        provider_hint = "Gemini" if ai_settings.gemini_api_key else ("OpenAI" if ai_settings.openai_api_key else "none")
         try:
             _build_chat_model.cache_clear()
         except Exception:

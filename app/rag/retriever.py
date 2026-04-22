@@ -5,7 +5,7 @@ from typing import List
 
 from openai import OpenAI
 
-from core.config import settings
+from core.config import get_ai_settings
 
 try:
     import google.generativeai as genai
@@ -38,16 +38,16 @@ def _knowledge_chunks() -> List[str]:
     return chunks
 
 
-@lru_cache(maxsize=1)
-def _build_chat_model():
-    if settings.gemini_api_key:
+@lru_cache(maxsize=4)
+def _build_chat_model(provider: str, api_key: str, model_name: str):
+    if provider == "gemini":
         if genai is None:
             raise RuntimeError("google-generativeai is not installed")
-        genai.configure(api_key=settings.gemini_api_key)
-        return ("gemini", genai.GenerativeModel(settings.gemini_model))
+        genai.configure(api_key=api_key)
+        return ("gemini", genai.GenerativeModel(model_name))
 
-    if settings.openai_api_key:
-        return ("openai", OpenAI(api_key=settings.openai_api_key))
+    if provider == "openai":
+        return ("openai", OpenAI(api_key=api_key))
 
     raise RuntimeError("No supported AI provider key found")
 
@@ -80,7 +80,14 @@ def _top_context(query: str, k: int = 3) -> str:
 
 
 def _generate_answer(prompt: str) -> str:
-    provider, client = _build_chat_model()
+    ai_settings = get_ai_settings()
+
+    if ai_settings.gemini_api_key:
+        provider, client = _build_chat_model("gemini", ai_settings.gemini_api_key, ai_settings.gemini_model)
+    elif ai_settings.openai_api_key:
+        provider, client = _build_chat_model("openai", ai_settings.openai_api_key, ai_settings.openai_model)
+    else:
+        raise RuntimeError("No supported AI provider key found")
 
     if provider == "gemini":
         response = client.generate_content(prompt)
@@ -90,7 +97,7 @@ def _generate_answer(prompt: str) -> str:
         return "I could not generate a response right now. Please try again."
 
     response = client.responses.create(
-        model=settings.openai_model,
+        model=ai_settings.openai_model,
         input=prompt,
     )
     text = getattr(response, "output_text", "")
@@ -115,11 +122,14 @@ def _local_fallback_answer(query: str, context: str) -> str:
 
 def warm_assistant_assets():
     _knowledge_chunks()
-    _build_chat_model()
+    ai_settings = get_ai_settings()
+    if ai_settings.gemini_api_key:
+        _build_chat_model("gemini", ai_settings.gemini_api_key, ai_settings.gemini_model)
+    elif ai_settings.openai_api_key:
+        _build_chat_model("openai", ai_settings.openai_api_key, ai_settings.openai_model)
 
 
-@lru_cache(maxsize=128)
-def _get_rag_response_cached(normalized_query: str):
+def _get_rag_response(normalized_query: str):
     context = _top_context(normalized_query, k=3)
 
     prompt = (
@@ -137,4 +147,4 @@ def _get_rag_response_cached(normalized_query: str):
 
 
 def get_rag_response(query: str):
-    return _get_rag_response_cached(_normalize_query(query))
+    return _get_rag_response(_normalize_query(query))

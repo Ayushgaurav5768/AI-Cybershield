@@ -48,3 +48,25 @@ class Settings:
 
 
 settings = Settings()
+
+
+@dataclass(frozen=True)
+class AiSettings:
+    openai_api_key: str
+    gemini_api_key: str
+    openai_model: str
+    gemini_model: str
+
+    @property
+    def has_ai_api_key(self) -> bool:
+        return bool(self.openai_api_key or self.gemini_api_key)
+
+
+def get_ai_settings() -> AiSettings:
+    load_dotenv(override=True)
+    return AiSettings(
+        openai_api_key=os.getenv("OPENAI_API_KEY", ""),
+        gemini_api_key=os.getenv("GEMINI_API_KEY", os.getenv("GOOGLE_API_KEY", "")),
+        openai_model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+        gemini_model=os.getenv("GEMINI_MODEL", "gemini-2.0-flash"),
+    )
